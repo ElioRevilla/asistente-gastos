@@ -70,7 +70,7 @@ def create_app() -> FastAPI:
     send_daily_summary = SendDailySummaryUseCase(expense_repo, user_repo, notifier)
 
     # ── Presentation — Telegram handlers ────────────────────────────────────
-    handlers = ExpenseHandlers(register_expense)
+    handlers = ExpenseHandlers(register_expense, user_repo)
     commands = BotCommands(user_repo, get_period_summary, get_category_summary)
 
     ptb_app.add_handler(CommandHandler("start", commands.start))

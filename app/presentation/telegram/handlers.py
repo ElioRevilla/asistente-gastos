@@ -7,6 +7,8 @@ from telegram.ext import ContextTypes
 
 from app.application.use_cases.register_expense import RegisterExpenseUseCase
 from app.domain.entities.expense import Expense
+from app.domain.entities.user import User
+from app.domain.repositories.user_repository import IUserRepository
 
 logger = logging.getLogger(__name__)
 
@@ -26,8 +28,17 @@ def _format_confirmation(expense: Expense) -> str:
 
 
 class ExpenseHandlers:
-    def __init__(self, register_expense: RegisterExpenseUseCase) -> None:
+    def __init__(self, register_expense: RegisterExpenseUseCase, user_repo: IUserRepository) -> None:
         self._register = register_expense
+        self._user_repo = user_repo
+
+    async def _ensure_user(self, update: Update) -> None:
+        tg_user = update.effective_user
+        user = User(
+            user_id=str(tg_user.id),
+            first_name=tg_user.first_name or "Usuario",
+        )
+        await self._user_repo.save(user)
 
     async def handle_text(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         if not update.message or not update.message.text:
@@ -35,6 +46,7 @@ class ExpenseHandlers:
         user_id = str(update.effective_user.id)
         text = update.message.text
 
+        await self._ensure_user(update)
         await update.message.reply_text("⏳ Procesando...")
         try:
             expense = await self._register.execute(
@@ -52,6 +64,7 @@ class ExpenseHandlers:
             return
         user_id = str(update.effective_user.id)
 
+        await self._ensure_user(update)
         await update.message.reply_text("📷 Analizando recibo...")
         try:
             photo = update.message.photo[-1]  # highest resolution
@@ -73,6 +86,7 @@ class ExpenseHandlers:
             return
         user_id = str(update.effective_user.id)
 
+        await self._ensure_user(update)
         await update.message.reply_text("🎤 Transcribiendo audio...")
         try:
             file = await context.bot.get_file(update.message.voice.file_id)
