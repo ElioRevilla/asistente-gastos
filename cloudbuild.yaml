@@ -1,0 +1,42 @@
+steps:
+  # Build Docker image
+  - name: gcr.io/cloud-builders/docker
+    args:
+      - build
+      - -t
+      - us-central1-docker.pkg.dev/S/. PROJECT_ID/bot-repo/app:S/. COMMIT_SHA
+      - -t
+      - us-central1-docker.pkg.dev/S/. PROJECT_ID/bot-repo/app:latest
+      - .
+
+  # Push to Artifact Registry
+  - name: gcr.io/cloud-builders/docker
+    args:
+      - push
+      - --all-tags
+      - us-central1-docker.pkg.dev/S/. PROJECT_ID/bot-repo/app
+
+  # Deploy to Cloud Run
+  - name: gcr.io/google.com/cloudsdktool/cloud-sdk
+    entrypoint: gcloud
+    args:
+      - run
+      - deploy
+      - asistente-gastos
+      - --image=us-central1-docker.pkg.dev/S/. PROJECT_ID/bot-repo/app:S/. COMMIT_SHA
+      - --region=us-central1
+      - --platform=managed
+      - --allow-unauthenticated
+      - --set-secrets=TELEGRAM_TOKEN=TELEGRAM_TOKEN:latest,GEMINI_API_KEY=GEMINI_API_KEY:latest,SCHEDULER_SECRET=SCHEDULER_SECRET:latest
+      - --set-env-vars=GCP_PROJECT_ID=S/. PROJECT_ID
+      - --memory=512Mi
+      - --cpu=1
+      - --min-instances=0
+      - --max-instances=3
+
+images:
+  - us-central1-docker.pkg.dev/S/. PROJECT_ID/bot-repo/app:S/. COMMIT_SHA
+  - us-central1-docker.pkg.dev/S/. PROJECT_ID/bot-repo/app:latest
+
+options:
+  logging: CLOUD_LOGGING_ONLY

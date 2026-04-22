@@ -1,0 +1,57 @@
+name: Deploy to Cloud Run
+
+on:
+  push:
+    branches: [main]
+
+env:
+  PROJECT_ID: asistente-gastos-bot
+  REGION: us-central1
+  REPO: bot-repo
+  SERVICE: asistente-gastos
+  IMAGE: us-central1-docker.pkg.dev/asistente-gastos-bot/bot-repo/asistente-gastos
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Authenticate to GCP
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: projects/86152563789/locations/global/workloadIdentityPools/github-pool/providers/github-provider
+          service_account: github-actions@asistente-gastos-bot.iam.gserviceaccount.com
+
+      - name: Configure Docker for Artifact Registry
+        run: gcloud auth configure-docker ${{ env.REGION }}-docker.pkg.dev --quiet
+
+      - name: Build and push image
+        run: |
+          docker build -t ${{ env.IMAGE }}:${{ github.sha }} -t ${{ env.IMAGE }}:latest .
+          docker push ${{ env.IMAGE }}:${{ github.sha }}
+          docker push ${{ env.IMAGE }}:latest
+
+      - name: Deploy to Cloud Run
+        run: |
+          gcloud run deploy ${{ env.SERVICE }} \
+            --image=${{ env.IMAGE }}:${{ github.sha }} \
+            --region=${{ env.REGION }} \
+            --platform=managed \
+            --allow-unauthenticated \
+            --set-secrets=TELEGRAM_TOKEN=TELEGRAM_TOKEN:latest,SCHEDULER_SECRET=SCHEDULER_SECRET:latest \
+            --set-env-vars=GCP_PROJECT_ID=${{ env.PROJECT_ID }},DEFAULT_CURRENCY=PEN,DEFAULT_TIMEZONE=America/Lima \
+            --memory=512Mi \
+            --cpu=1 \
+            --min-instances=0 \
+            --max-instances=3 \
+            --quiet
+
+      - name: Set Telegram webhook
+        run: |
+          URL=$(gcloud run services describe ${{ env.SERVICE }} --region=${{ env.REGION }} --format='value(status.url)')
+          curl -s "https://api.telegram.org/bot${{ secrets.TELEGRAM_TOKEN }}/setWebhook?url=${URL}/webhook"
