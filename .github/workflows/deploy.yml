@@ -54,4 +54,5 @@ jobs:
       - name: Set Telegram webhook
         run: |
           URL=$(gcloud run services describe ${{ env.SERVICE }} --region=${{ env.REGION }} --format='value(status.url)')
-          curl -s "https://api.telegram.org/bot${{ secrets.TELEGRAM_TOKEN }}/setWebhook?url=${URL}/webhook"
+          TOKEN=$(gcloud secrets versions access latest --secret=TELEGRAM_TOKEN --project=${{ env.PROJECT_ID }})
+          curl -s "https://api.telegram.org/bot${TOKEN}/setWebhook?url=${URL}/webhook"
