@@ -1,8 +1,10 @@
 from __future__ import annotations
 
 import logging
-from datetime import date
+import os
+from datetime import date, datetime
 from decimal import Decimal
+from zoneinfo import ZoneInfo
 
 from app.application.ports.notifier import INotifier
 from app.domain.repositories.expense_repository import IExpenseRepository
@@ -40,7 +42,8 @@ class SendDailySummaryUseCase:
 
     async def execute(self) -> int:
         """Send today's summary to all users. Returns count of messages sent."""
-        today = date.today()
+        tz = ZoneInfo(os.environ.get("DEFAULT_TIMEZONE", "America/Lima"))
+        today = datetime.now(tz).date()
         user_ids = await self._expense_repo.get_all_user_ids()
         sent = 0
 
