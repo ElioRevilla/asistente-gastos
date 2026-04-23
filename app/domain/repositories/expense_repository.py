@@ -23,3 +23,9 @@ class IExpenseRepository(ABC):
 
     @abstractmethod
     async def get_all_user_ids(self) -> list[str]: ...
+
+    @abstractmethod
+    async def get_recent(self, user_id: str, limit: int = 5) -> list[Expense]: ...
+
+    @abstractmethod
+    async def delete(self, expense_id: str) -> None: ...

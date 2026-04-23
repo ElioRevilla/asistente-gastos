@@ -68,6 +68,19 @@ class FirestoreExpenseRepository(IExpenseRepository):
         docs = await self._db.collection(COLLECTION).select(["user_id"]).get()
         return list({doc.to_dict()["user_id"] for doc in docs})  # type: ignore[index]
 
+    async def get_recent(self, user_id: str, limit: int = 5) -> list[Expense]:
+        query = (
+            self._db.collection(COLLECTION)
+            .where("user_id", "==", user_id)
+            .order_by("created_at", direction=firestore.Query.DESCENDING)
+            .limit(limit)
+        )
+        docs = await query.get()
+        return [self._to_entity(doc.id, doc.to_dict()) for doc in docs]  # type: ignore[arg-type]
+
+    async def delete(self, expense_id: str) -> None:
+        await self._db.collection(COLLECTION).document(expense_id).delete()
+
     @staticmethod
     def _to_entity(doc_id: str, data: dict) -> Expense:
         raw_date = data["date"]

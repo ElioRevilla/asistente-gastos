@@ -10,6 +10,7 @@ from fastapi import FastAPI
 from google.cloud import firestore
 from telegram.ext import (
     Application,
+    CallbackQueryHandler,
     CommandHandler,
     MessageHandler,
     filters,
@@ -70,14 +71,16 @@ def create_app() -> FastAPI:
     send_daily_summary = SendDailySummaryUseCase(expense_repo, user_repo, notifier)
 
     # ── Presentation — Telegram handlers ────────────────────────────────────
-    handlers = ExpenseHandlers(register_expense, user_repo)
-    commands = BotCommands(user_repo, get_period_summary, get_category_summary)
+    handlers = ExpenseHandlers(register_expense, user_repo, expense_repo)
+    commands = BotCommands(user_repo, expense_repo, get_period_summary, get_category_summary)
 
     ptb_app.add_handler(CommandHandler("start", commands.start))
     ptb_app.add_handler(CommandHandler("hoy", commands.hoy))
     ptb_app.add_handler(CommandHandler("semana", commands.semana))
     ptb_app.add_handler(CommandHandler("mes", commands.mes))
     ptb_app.add_handler(CommandHandler("cat", commands.cat))
+    ptb_app.add_handler(CommandHandler("borrar", commands.borrar))
+    ptb_app.add_handler(CallbackQueryHandler(handlers.handle_delete_callback, pattern=r"^del:"))
     ptb_app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handlers.handle_text))
     ptb_app.add_handler(MessageHandler(filters.PHOTO, handlers.handle_photo))
     ptb_app.add_handler(MessageHandler(filters.VOICE, handlers.handle_voice))

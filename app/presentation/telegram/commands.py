@@ -3,7 +3,7 @@ from __future__ import annotations
 import logging
 from decimal import Decimal
 
-from telegram import Update
+from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
 from telegram.ext import ContextTypes
 
 from app.application.use_cases.get_category_summary import (
@@ -16,6 +16,7 @@ from app.application.use_cases.get_period_summary import (
     SummaryDTO,
 )
 from app.domain.entities.user import User
+from app.domain.repositories.expense_repository import IExpenseRepository
 from app.domain.repositories.user_repository import IUserRepository
 
 logger = logging.getLogger(__name__)
@@ -64,10 +65,12 @@ class BotCommands:
     def __init__(
         self,
         user_repo: IUserRepository,
+        expense_repo: IExpenseRepository,
         get_period_summary: GetPeriodSummaryUseCase,
         get_category_summary: GetCategorySummaryUseCase,
     ) -> None:
         self._user_repo = user_repo
+        self._expense_repo = expense_repo
         self._period_summary = get_period_summary
         self._category_summary = get_category_summary
 
@@ -88,7 +91,8 @@ class BotCommands:
             "/hoy — resumen de hoy\n"
             "/semana — resumen de la semana\n"
             "/mes — resumen del mes\n"
-            "/cat — gastos por categoría"
+            "/cat — gastos por categoría\n"
+            "/borrar — eliminar un gasto reciente"
         )
 
     async def hoy(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -99,6 +103,29 @@ class BotCommands:
 
     async def mes(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         await self._reply_period(update, "mes")
+
+    async def borrar(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+        user_id = str(update.effective_user.id)
+        try:
+            expenses = await self._expense_repo.get_recent(user_id, limit=5)
+            if not expenses:
+                await update.message.reply_text("No tienes gastos recientes para eliminar.")
+                return
+
+            keyboard = [
+                [InlineKeyboardButton(
+                    f"❌ {e.amount.normalize()} {e.currency} — {e.description or e.category.capitalize()}",
+                    callback_data=f"del:{e.id}",
+                )]
+                for e in expenses
+            ]
+            await update.message.reply_text(
+                "🗑️ Últimos gastos — toca para eliminar:",
+                reply_markup=InlineKeyboardMarkup(keyboard),
+            )
+        except Exception:
+            logger.exception("Error in /borrar for user %s", user_id)
+            await update.message.reply_text("❌ Error obteniendo los gastos recientes.")
 
     async def cat(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         user_id = str(update.effective_user.id)
@@ -116,7 +143,8 @@ class BotCommands:
             "/hoy — resumen de hoy\n"
             "/semana — resumen de la semana\n"
             "/mes — resumen del mes\n"
-            "/cat — gastos por categoría"
+            "/cat — gastos por categoría\n"
+            "/borrar — eliminar un gasto reciente"
         )
 
     async def _reply_period(self, update: Update, period: Period) -> None:
