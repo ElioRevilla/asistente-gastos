@@ -2,10 +2,10 @@ from __future__ import annotations
 
 import json
 import logging
-import os
-from datetime import date, datetime
+from datetime import date
 from decimal import Decimal, InvalidOperation
-from zoneinfo import ZoneInfo
+
+from app.application.utils.timezone import local_today
 
 import vertexai
 from vertexai.generative_models import GenerationConfig, GenerativeModel, Part
@@ -81,8 +81,7 @@ class GeminiExtractor(IAIExtractor):
         except (KeyError, InvalidOperation) as exc:
             raise ValueError("Missing or invalid 'amount' in AI response") from exc
 
-        tz = ZoneInfo(os.environ.get("DEFAULT_TIMEZONE", "America/Lima"))
-        expense_date = datetime.now(tz).date()
+        expense_date = local_today()
         if raw_date := data.get("date"):
             try:
                 expense_date = date.fromisoformat(raw_date)

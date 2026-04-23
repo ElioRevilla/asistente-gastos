@@ -1,12 +1,11 @@
 from __future__ import annotations
 
-import os
 from dataclasses import dataclass
-from datetime import date, datetime, timedelta
+from datetime import date, timedelta
 from decimal import Decimal
 from typing import Literal
-from zoneinfo import ZoneInfo
 
+from app.application.utils.timezone import local_today
 from app.domain.repositories.expense_repository import IExpenseRepository
 
 Period = Literal["hoy", "semana", "mes"]
@@ -21,13 +20,8 @@ class SummaryDTO:
     count: int
 
 
-def _today_local() -> date:
-    tz = ZoneInfo(os.environ.get("DEFAULT_TIMEZONE", "America/Lima"))
-    return datetime.now(tz).date()
-
-
 def _period_range(period: Period) -> tuple[date, date]:
-    today = _today_local()
+    today = local_today()
     if period == "hoy":
         return today, today
     if period == "semana":
