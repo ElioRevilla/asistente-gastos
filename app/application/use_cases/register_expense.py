@@ -1,8 +1,7 @@
 from __future__ import annotations
 
-from datetime import date
-
 from app.application.ports.ai_extractor import IAIExtractor
+from app.application.utils.timezone import local_today
 from app.domain.entities.expense import Expense, ExpenseSource
 from app.domain.repositories.expense_repository import IExpenseRepository
 from app.domain.repositories.user_repository import IUserRepository
@@ -39,7 +38,7 @@ class RegisterExpenseUseCase:
             currency=data.currency,
             category=data.category,
             description=data.description,
-            date=data.date or date.today(),
+            date=data.date or local_today(),
             source=source,
         )
 

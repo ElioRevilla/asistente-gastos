@@ -1,8 +1,8 @@
-from datetime import date
+from app.application.utils.timezone import local_today
 
 
 def get_expense_prompt(default_currency: str = "COP") -> str:
-    today = date.today().isoformat()
+    today = local_today().isoformat()
     return f"""
 Eres un asistente que extrae información de gastos personales.
 Hoy es {today}.
@@ -28,7 +28,7 @@ Reglas:
 
 
 def get_audio_prompt(default_currency: str = "COP") -> str:
-    today = date.today().isoformat()
+    today = local_today().isoformat()
     return f"""
 Eres un asistente que transcribe mensajes de voz sobre gastos y extrae la información.
 Hoy es {today}.
