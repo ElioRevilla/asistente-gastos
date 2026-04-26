@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import logging
+import os
 from decimal import Decimal
 
 from app.application.utils.timezone import local_today
@@ -12,6 +13,11 @@ from app.domain.repositories.user_repository import IUserRepository
 logger = logging.getLogger(__name__)
 
 
+def _fmt(amount: Decimal) -> str:
+    normalized = amount.normalize()
+    return f"{normalized:,}" if normalized == normalized.to_integral_value() else f"{normalized:,f}"
+
+
 def _format_summary(
     first_name: str,
     today: date,
@@ -20,9 +26,9 @@ def _format_summary(
     by_category: dict[str, Decimal],
 ) -> str:
     day_str = today.strftime("%-d %b").lstrip("0")
-    lines = [f"📊 Resumen de hoy — {day_str}", f"Total: S/. {total:,.0f} {currency}"]
+    lines = [f"📊 Resumen de hoy — {day_str}", f"Total: S/. {_fmt(total)} {currency}"]
     for cat, amount in sorted(by_category.items(), key=lambda x: x[1], reverse=True):
-        lines.append(f"  • {cat.capitalize()}: S/. {amount:,.0f}")
+        lines.append(f"  • {cat.capitalize()}: S/. {_fmt(amount)}")
     if not by_category:
         lines.append("Sin gastos registrados hoy.")
     return "\n".join(lines)
@@ -52,7 +58,8 @@ class SendDailySummaryUseCase:
                     continue
 
                 expenses = await self._expense_repo.get_by_period(user_id, today, today)
-                currency = expenses[0].currency if expenses else "COP"
+                default_currency = os.environ.get("DEFAULT_CURRENCY", "PEN")
+                currency = expenses[0].currency if expenses else default_currency
                 total = sum((e.amount for e in expenses), Decimal(0))
                 by_category: dict[str, Decimal] = {}
                 for e in expenses:
