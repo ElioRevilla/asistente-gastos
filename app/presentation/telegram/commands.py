@@ -21,6 +21,11 @@ from app.domain.repositories.user_repository import IUserRepository
 
 logger = logging.getLogger(__name__)
 
+def _fmt(amount: Decimal) -> str:
+    normalized = amount.normalize()
+    return f"{normalized:,}" if normalized == normalized.to_integral_value() else f"{normalized:,f}"
+
+
 PERIOD_LABELS: dict[Period, str] = {
     "hoy": "hoy",
     "semana": "esta semana",
@@ -35,11 +40,11 @@ def _format_period_summary(summary: SummaryDTO) -> str:
 
     lines = [
         f"📊 Gastos {label}",
-        f"Total: S/. {summary.total:,.0f} {summary.currency}",
+        f"Total: S/. {_fmt(summary.total)} {summary.currency}",
         f"Transacciones: {summary.count}",
     ]
     for cat, amount in sorted(summary.by_category.items(), key=lambda x: x[1], reverse=True):
-        lines.append(f"  • {cat.capitalize()}: S/. {amount:,.0f}")
+        lines.append(f"  • {cat.capitalize()}: S/. {_fmt(amount)}")
     return "\n".join(lines)
 
 
@@ -51,12 +56,12 @@ def _format_category_summary(categories: list[CategoryDTO]) -> str:
     total = sum(c.total for c in categories)
     lines = [
         f"📊 Gastos por categoría (mes actual)",
-        f"Total: S/. {total:,.0f} {currency}",
+        f"Total: S/. {_fmt(total)} {currency}",
     ]
     for cat in categories:
         pct = int(cat.total / total * 100) if total else 0
         lines.append(
-            f"  • {cat.category.capitalize()}: S/. {cat.total:,.0f} ({pct}%) — {cat.count} items"
+            f"  • {cat.category.capitalize()}: S/. {_fmt(cat.total)} ({pct}%) — {cat.count} items"
         )
     return "\n".join(lines)
 
