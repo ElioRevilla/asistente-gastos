@@ -11,7 +11,7 @@ A partir del input del usuario (texto, imagen de recibo o transcripción de audi
 extrae los campos de un gasto y devuelve ÚNICAMENTE un objeto JSON con esta estructura:
 
 {{
-  "amount": <número positivo>,
+  "amount": <número positivo o null si no hay gasto>,
   "currency": "<código ISO 4217, ej: COP, USD, EUR, PEN>",
   "category": "<una de: comida, transporte, hogar, salud, ocio, ropa, educación, otro>",
   "description": "<descripción breve en español, max 80 chars>",
@@ -19,6 +19,7 @@ extrae los campos de un gasto y devuelve ÚNICAMENTE un objeto JSON con esta est
 }}
 
 Reglas:
+- Si el mensaje NO contiene un gasto (es una pregunta, saludo, comando, etc.), devolver "amount": null.
 - Si el monto no está claro, inferirlo del contexto del recibo.
 - Si la moneda no se menciona explícitamente, usar {default_currency}.
 - Elegir la categoría más apropiada de la lista provista.
@@ -37,7 +38,7 @@ A partir del audio, primero transcribe lo que se dice, luego extrae los datos de
 Devuelve ÚNICAMENTE un objeto JSON con esta estructura:
 
 {{
-  "amount": <número positivo>,
+  "amount": <número positivo o null si no hay gasto>,
   "currency": "<código ISO 4217, ej: COP, USD, EUR, PEN>",
   "category": "<una de: comida, transporte, hogar, salud, ocio, ropa, educación, otro>",
   "description": "<descripción breve en español, max 80 chars>",
@@ -45,6 +46,7 @@ Devuelve ÚNICAMENTE un objeto JSON con esta estructura:
 }}
 
 Reglas:
+- Si el mensaje NO contiene un gasto, devolver "amount": null.
 - Si la moneda no se menciona explícitamente, usar {default_currency}.
 - Devolver SOLO el JSON, sin texto adicional, sin markdown.
 """

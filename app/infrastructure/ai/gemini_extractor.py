@@ -11,7 +11,7 @@ from app.application.utils.timezone import local_today
 import vertexai
 from vertexai.generative_models import GenerationConfig, GenerativeModel, Part
 
-from app.application.ports.ai_extractor import IAIExtractor
+from app.application.ports.ai_extractor import IAIExtractor, NoExpenseDetectedError
 from app.domain.entities.expense import ExpenseData
 from app.infrastructure.ai.prompts import get_audio_prompt, get_expense_prompt
 
@@ -76,6 +76,9 @@ class GeminiExtractor(IAIExtractor):
         except json.JSONDecodeError:
             logger.error("Gemini returned non-JSON: %s", raw)
             raise ValueError("AI response is not valid JSON")
+
+        if data.get("amount") is None:
+            raise NoExpenseDetectedError()
 
         try:
             amount = Decimal(str(data["amount"]))

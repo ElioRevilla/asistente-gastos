@@ -5,6 +5,10 @@ from abc import ABC, abstractmethod
 from app.domain.entities.expense import ExpenseData
 
 
+class NoExpenseDetectedError(Exception):
+    """Raised when the input does not contain a recognizable expense."""
+
+
 class IAIExtractor(ABC):
     """Port: extracts expense data from any input modality."""
 

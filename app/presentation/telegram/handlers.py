@@ -5,6 +5,7 @@ import logging
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
 from telegram.ext import ContextTypes
 
+from app.application.ports.ai_extractor import NoExpenseDetectedError
 from app.application.use_cases.register_expense import RegisterExpenseUseCase
 from app.domain.entities.expense import Expense
 from app.domain.entities.user import User
@@ -69,10 +70,14 @@ class ExpenseHandlers:
                 _format_confirmation(expense),
                 reply_markup=_delete_keyboard(expense.id),
             )
+        except NoExpenseDetectedError:
+            await update.message.reply_text(
+                "ℹ️ No detecté ningún gasto. Envíame algo como: 'Gasté 15 en almuerzo'"
+            )
         except Exception:
             logger.exception("Error registering text expense for user %s", user_id)
             await update.message.reply_text(
-                "❌ No pude extraer el gasto. Intenta con: 'Gasté 15000 en almuerzo'"
+                "❌ No pude extraer el gasto. Intenta con: 'Gasté 15 en almuerzo'"
             )
 
     async def handle_photo(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -93,6 +98,10 @@ class ExpenseHandlers:
             await update.message.reply_text(
                 _format_confirmation(expense),
                 reply_markup=_delete_keyboard(expense.id),
+            )
+        except NoExpenseDetectedError:
+            await update.message.reply_text(
+                "ℹ️ No detecté ningún gasto en la imagen."
             )
         except Exception:
             logger.exception("Error registering photo expense for user %s", user_id)
@@ -117,6 +126,10 @@ class ExpenseHandlers:
             await update.message.reply_text(
                 _format_confirmation(expense),
                 reply_markup=_delete_keyboard(expense.id),
+            )
+        except NoExpenseDetectedError:
+            await update.message.reply_text(
+                "ℹ️ No detecté ningún gasto en el audio."
             )
         except Exception:
             logger.exception("Error registering voice expense for user %s", user_id)
